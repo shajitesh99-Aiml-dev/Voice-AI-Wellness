@@ -1,0 +1,336 @@
+Executive Summary
+An AI-powered emotional wellness app using an evolving room as its core metaphor combines gamification and ambient UI to maximise engagement. The concept: users check in daily, the AI extracts emotions, suggests a small mission (e.g. a 5‑minute walk), and the virtual room visually reflects the user’s mood and progress. This ties self-care to visible growth and ambience – akin to Finch’s pet-bird or Forest’s growing tree.
+. The value is in reducing friction (the UI sells itself) and providing emotional resonance (Calm’s soothing visuals
+). We prioritise polished interactivity over heavy algorithms, using off-the-shelf AI calls (OpenAI/Gemini) and simple rule-based logic.
+
+Key points:
+
+Concept & Differentiation: A “Behavioural Progression Room” that evolves (lighting, items, weather) as wellness improves – more personal and tangible than a chatbot. Finch’s success with a pet-bird metaphor
+ and Forest’s tree-growth focus model
+ show that visible growth taps into motivation.
+Quick MVP Build: Use a React+Tailwind frontend for rapid UI, a FastAPI backend for simple endpoints
+, and OpenAI/Gemini APIs for NLP. Store data in JSON/SQLite. Avoid complex infra: no auth, no mobile app, no custom ML.
+Core Flows: Onboarding, daily check-in (text input), AI emotion extraction, mission suggestion, room-state update, streak counting, and insights/dashboard. Each flow has 1–3 screens or API calls (detailed below).
+Tech Stack & Effort: Frontend in React (easy UI) + Tailwind (rapid styling); backend in FastAPI; AI via OpenAI’s GPT-4 or Google Gemini text APIs; charts with Recharts; simple animations with Lottie or CSS. Each feature is ~1–3h of work (difficulty ‘Easy’ to ‘Medium’).
+Hackathon Plan (8–12h): Build UI skeleton and fake data flow first, then integrate AI calls and visuals, leaving time to polish UX and transitions. Key milestones: static UI, AI-driven logic, animations, polish (see timeline below). Fallbacks: if short on time, drop non‑essential bits (e.g. skip charts or Lottie).
+Outcome: A demo-ready prototype where judges can type a mood, see AI‑generated mission, and watch the room transform accordingly. Success means a coherent, smooth experience that feels innovative and emotionally engaging (not “just another chatbot”).
+
+Product Concept & Value Proposition
+We propose “Your Emotional Ecosystem”: an ambient, gamified environment that visually mirrors your wellbeing. Instead of generic charts, the main screen is a room or living space whose lighting, clutter, decorations and even weather change with the user’s mood and habits. For example, late nights lead to a darker, messy room; consistent sleep brings a warm, sunlit scene; completing a mission might sprout a houseplant or add a cozy lamp. This creates immediate emotional resonance (users recognise “that’s how I feel”) and tangible progress (the room becomes nicer over time).
+
+Gamification without Friction: Like Finch’s evolving pet bird (where self‑care becomes a “cozy daily ritual”)
+ or Forest’s tree that grows during focused work
+, our room rewards user effort with visual growth. This leverages intrinsic motivation and habit loops. The room is “the user’s mental space”, making the journey personal.
+Ambient UI for Emotional Safety: Drawing from Calm’s design, we use soft colors and nature themes to evoke calm
+. The interface is low-stress: the user’s first encounter might be a serene splash screen (“Take a deep breath”)
+. This reduces anxiety around “being scored” and underscores support rather than correction.
+AI Personalisation: The app remembers the user’s patterns. It “knows” if you’ve been stressed or inconsistent, then suggests missions accordingly. (For example, detecting late-night habits → mission to unwind earlier.) This adaptive loop makes it feel more intelligent than a static check‑in app. It directly addresses the biggest challenge in wellness apps: retention. By generating personalised missions and visuals, users want to return to see their room again.
+Clear Demo Angle: In a hackathon demo, this product immediately feels useful: judges themselves can see and feel a difference as they interact. Contrast with a security dashboard demo: the judge is the user here. A shift from a gloomy to a brighter room is instantly understandable.
+Positioning: Rather than “another AI chatbot”, this is a Behavioural Progression Engine for wellness. Most teams might build a mood-checking bot; we build an AI-driven narrative world. For instance, Finch “turns self-discipline into care” with a pet metaphor
+. We apply that insight to an environment metaphor, which is less common and deeply memorable.
+
+Prioritised User Flows and Screens
+Below are the essential flows for a lean MVP. Each flow includes: UI screens/components, backend endpoint, data model, minimal logic/pseudocode, required tools, and an estimated build time + difficulty.
+
+1. Onboarding
+UI:
+Welcome Screen (“Welcome to [AppName] – your personal wellbeing companion.”)
+Goal Selection (buttons/icons to pick 1–2 goals like “Reduce Stress”, “Sleep Better”)
+(Optional) Basic profile/name.
+Backend Endpoint: POST /api/onboarding (save user profile and goals).
+Data Model:
+json
+Copy
+User {
+  id: int,
+  name: string,
+  goals: [string],
+  preferences: {...}
+}
+Logic / Pseudocode:
+python
+Copy
+def handle_onboarding(data):
+    user = User(name=data.name, goals=data.goals)
+    save_to_db(user)
+    return { status: "ok", userId: user.id }
+Tools/Libraries: React forms + Tailwind UI for layout; FastAPI for endpoint; JSON or SQLite for storage.
+Effort: ~2h (Easy) – simple form and POST call.
+Purpose: Personalise the experience upfront (e.g. use the user’s name in dialogues, tailor mission language to goals
+). Finch’s onboarding is “supportive and warm”
+, and we mimic that tone (soft greetings, friendly icons).
+
+2. Daily Check-In (Mood Reporting)
+UI:
+Chat-style input or quick-select mood indicators. Example: a text box with placeholder “How are you feeling today?” Or buttons: 😊 😟 😴.
+Submit button (“Update”).
+Endpoint: POST /api/checkin (send user ID + text or mood rating).
+Data Model:
+json
+Copy
+CheckIn {
+  userId: int,
+  date: date,
+  rawText: string,      // user input or mood selection
+  mood: number,         // e.g. 0–100 scale
+  stress: number,       // 0–100
+  energy: number,       // 0–100
+  sleepQuality: number  // 0–100
+}
+Logic / Pseudocode:
+python
+Copy
+def handle_checkin(userId, rawText):
+    # Call LLM to extract sentiment metrics
+    prompt = f"Extract mood, stress, energy from: \"{rawText}\""
+    response = llm_api.call(prompt)
+    scores = parse_response(response)  # e.g. {mood:75, stress:30, energy:50}
+    checkin = CheckIn(userId, date.today(), rawText, **scores)
+    save_to_db(checkin)
+    return { updatedScores: scores }
+Tools/Libraries: OpenAI or Gemini API for NLP; React for input UI (use useState), fetch API for request.
+Effort: ~2h (Easy) – hooking up text input and a single API call.
+Notes: This step powers everything. We use an LLM prompt like “Identify the user’s emotional state from this message”. (Sample prompts later.) We must handle only basic metrics; avoid complex therapy. The UI stays calm (avoid any negative feedback).
+3. Mission Generation
+UI:
+Immediately after check-in, show a “Today’s Mission” card: e.g. “Mission: Take a 5-minute walk after lunch three times this week.” with a checkbox to mark completion.
+Endpoint: Could be part of check-in response, or a separate POST /api/mission that uses recent check-in data.
+Data Model:
+json
+Copy
+Mission {
+  id: int,
+  userId: int,
+  text: string,
+  dateAssigned: date,
+  completed: bool
+}
+Logic / Pseudocode:
+python
+Copy
+def generate_mission(userId):
+    pattern = analyze_recent_checkins(userId)  # e.g. detect high stress at night
+    if pattern == "late_night":
+        mission = "No screens after 11 PM for 3 days"
+    elif pattern == "low_exercise":
+        mission = "Do a 5-minute walk after lunch for 3 days"
+    else:
+        mission = "Take 3 deep breaths twice a day"
+    save_to_db(Mission(userId=userId, text=mission, completed=False))
+    return mission
+Alternatively, use LLM to refine:
+python
+Copy
+prompt = f"Suggest a small actionable self-care mission for a user who reports [pattern]."
+mission = llm_api.call(prompt)
+Tools/Libraries: OpenAI/GPT or a simple rule engine; React to display the mission; a basic checkbox or button (no backend, or POST /api/mission/complete).
+Effort: ~1–2h (Easy) – simple conditionals or prompt.
+Notes: Keep missions very short and positive (avoid directives like “must”, keep tone gentle). They should feel doable. For hackathon speed, we can hardcode a few templates and fill keywords, instead of trusting the AI to invent something too long.
+4. Room-State Transitions (Core Visual Metaphor)
+UI:
+Main screen: a static background image or scene of a room. Overlays or variations represent different states (e.g. a window showing night/day, posters appearing, etc.).
+Backend Endpoint: Optional. State can be computed client-side from user’s latest scores. Possibly GET /api/roomState?userId= returning a state ID or image URL.
+Data Model:
+json
+Copy
+RoomState {
+  userId: int,
+  moodLevel: number,
+  streakDays: int,
+  lastMissionCompleted: bool,
+  stateId: string
+}
+Logic / Pseudocode:
+python
+Copy
+# Determine state from scores
+avgMood = (last_checkin.mood + ... ) / ...
+if avgMood > 70 and streak >= 3:
+    state = "bright_cozy"
+elif avgMood > 40:
+    state = "neutral"
+else:
+    state = "dim_cluttered"
+return state
+Then on frontend:
+js
+Copy
+useEffect(() => {
+  const state = determineRoomState(scores, streak);
+  setBackgroundImage(state);
+  if (animations) playTransitionAnimation(state);
+}, [scores, streak]);
+Tools/Libraries:
+UI/Animation: If using PNG state swaps, just prepare 3–4 images and switch img src or change a CSS class. (Very easy.)
+Or Lottie: if animations, embed Lottie JSON files (see next table). This is slightly more work (need designing them).
+Or simple CSS transitions: e.g. change CSS filters or add an overlay <div> with opacity transitions.
+Effort: ~2h (Easy to Medium) depending on approach.
+Notes: The room UI is the demo’s “wow factor”. It must look good. For hackathon, prioritise perceived change (even subtle: lighten color filter, show/hide objects). E.g., initially a grey rainy room, then after missions a warm lamp lights up (just swap in a lamp image). Don’t over-engineer 3D – stick to 2D art or layers.
+5. Streaks & Progression
+UI:
+A small widget displaying streak count (e.g. 🔥 X-day streak) and XP bar or level. Possibly integrated into room (e.g. a chart on the wall).
+Endpoint: Not mandatory; can compute from check-ins. Or GET /api/progress.
+Data Model:
+json
+Copy
+Progress {
+  userId: int,
+  streakDays: int,
+  totalXP: int
+}
+Logic / Pseudocode:
+python
+Copy
+def update_progress(userId):
+    streak = count_consecutive_days_with_checkin(userId)
+    xp = sum(points for completed missions)
+    return {"streakDays": streak, "totalXP": xp}
+Tools/Libraries: React for display, maybe a small Chart (Recharts) if graphing streak over time, else just text/icon.
+Effort: ~1h (Very Easy) – simple counts.
+Notes: Streaks reinforce continued use. Even if UI is minimal (just “5-day streak”), it visibly rewards consistency. This ties into the missions and room state logic.
+6. Memory / Insights Dashboard
+UI:
+One screen or modal showing graphs/trends: e.g. mood over past week, number of missions completed, triggers detected.
+A text summary like “You reported stress 4 times this week. Try X.”
+Endpoint: GET /api/insights?userId=
+Data Model: (Aggregated from CheckIn records.) Possibly no extra tables, just queries.
+Logic / Pseudocode:
+python
+Copy
+checkins = fetch_checkins(userId, last_7_days)
+moods = [c.mood for c in checkins]
+stressEvents = [c for c in checkins if c.stress > 60]
+avgMood = average(moods)
+insightText = "Consistent stress on evenings." if stressEvents else ""
+return {moodTrend: moods, insight: insightText}
+Tools/Libraries:
+Charts: Use Recharts or Chart.js (React wrapper) to plot mood vs time.
+AI (optional): Could feed recent data to an LLM for a friendly summary. But risk – simpler to template-ise.
+Effort: ~1–2h (Medium if making charts; Easy if just text list).
+Notes: This is nice-to-have for judges but less critical than core loop. If time is short, even a static screen with mock chart is fine.
+7. Demo Script (2–3 min walkthrough)
+To sell the idea, prepare a concise scenario with a volunteer or persona (judge as user):
+
+Onboarding (10s): “Hi, I’m Alex. Goals: manage stress.” Show warm welcome, select “Reduce stress”. (Sets tone.)
+Check-In (30s): Alex types “I’m feeling overwhelmed and tired after work.” LLM extracts “stress high, mood low, energy low.” (Show UI capturing these.)
+Mission Appears (20s): System suggests “Mission: No screens after 10 PM for 3 days.” Alex’s face lights up (or a thumbs-up).
+Room Transforms (30s): The on-screen room darkens a bit (reflecting current mood). Then show another scenario: after a few days/inputs and missions done, the room brightens (lamp turns on, a plant appears).
+Streak & Insights (30s): “Great job, 3-day streak!” Pop-up a streak icon. On insights tab, “You’ve had 4 evening stress check-ins; try this breathing exercise.”
+Conclusion (20s): Emphasize narrative: “In just minutes, the app understood me, gave me a doable goal, and my space got cozier. This feels like a living diary of my mood.” Then show slide: Success Criteria.
+Success Criteria for Judges (highlight in conclusion):
+
+Clarity & Engagement: The flow is immediately understandable (user types mood → AI responds).
+Polish: UI is clean and the room animations are smooth.
+Innovation: The room metaphor clearly stands out (not just a bot).
+User Impact: Missions feel personal and actionable. Judges should smile or nod – “I want my room to look like this.”
+Tools, Libraries and Estimations
+Frontend: React (component-based UI) + Tailwind CSS (rapid styling)
+. Use Create React App or Vite for speed.
+Backend: FastAPI (Python) – modern, async-ready, quick to set up. Hackathon tip: FastAPI has auto-doc and simple endpoints, similar to Flask
+.
+AI/NLP: OpenAI GPT-4 or Google Gemini (via their API). Use their Python or REST APIs. For example, Google’s GenAI SDK shows calling client.models.generate_content(model="gemini-3-flash-preview", contents="...") to get text
+.
+Storage: SQLite or JSON files. (No need for a full DB; just a few tables.)
+Animations:
+
+PNG State Swaps: Easiest – pre-draw 3-4 room images (e.g. “messy”, “neutral”, “cozy”) and swap them. (0 coding, just img src changes.)
+Lottie: For more dynamism (e.g. gently swaying curtains), use Lottie JSON. Lottie yields high-quality vectors; JSON is smaller than PNGs
+ but requires some design/AE prep.
+CSS/Canvas: Moderate effort – e.g. CSS filters for color shift, or a <div> with animated background. Canvas animations with libraries (p5.js) possible but probably overkill.
+Charts: Recharts (React+D3 charts). Very easy to plug in with npm install recharts.
+Deployment: Vercel or Netlify for frontend; Render or Heroku for FastAPI. Even simpler: run backend locally (but Vercel can run Python now, or use Vercel AI SDK as in Gemini docs).
+Effort & Difficulty Estimate (per feature, hackathon context):
+
+Onboarding: 2h (Easy) – static form.
+Check-In + AI call: 2h (Easy) – single POST request + render.
+Mission gen: 1.5h (Easy) – code some conditions & prompt.
+Room visuals: 3h (Medium) – creating assets or Lottie; switching states.
+Streak display: 1h (Easy) – simple counter.
+Insights/Charts: 2h (Medium) – hooking in Recharts or static images.
+Polish & Buffer: 2h – nice UI touches, ensure no errors, prepare demo narrative.
+Total: ~12h. Prioritise flows 1–4; drop insights or animations if short on time.
+Prompts and AI Guidelines
+Mood/Emotion Extraction Prompt
+Role & tone: Empathetic, structured output.
+
+vbnet
+Copy
+System: You are an AI assistant that analyzes a user's short journal entry for mood and stress. 
+User: "<user text>" 
+Assistant: 
+Prompt: “Read the user’s statement and extract their mood (0–100 calm/happy), stress level (0–100), energy (0–100), and any notable keywords. Respond in JSON: {“mood”:…, “stress”:…, “energy”:…, “keywords”: […]}.”
+
+Use few-shot examples if needed.
+Safety: Don’t give medical labels (no “You have depression”). Just descriptive tone. Focus: “The user seems low energy and anxious”.
+Example Template:
+css
+Copy
+User: "I had a terrible day at work and I'm exhausted." 
+Assistant: { "mood": 30, "stress": 90, "energy": 20, "keywords": ["terrible day", "exhausted"] }
+Mission Generation Prompt
+Goal: Suggest one actionable wellness mission matching user’s needs. Tone encouraging but not bossy.
+
+sql
+Copy
+System: You are a supportive wellness coach. The user’s recent check-ins show [pattern, e.g. "high evening stress, low energy"]. 
+Assistant: 
+Prompt: “Suggest one simple, positive habit or mission for this user. For example, 'Take a 5-minute walk after lunch today.' Keep it brief and achievable.”
+
+Encourage: Use “You might try” not commands.
+Safety: No medical claims. If pattern is severe (e.g. mentions self-harm), the system should not pretend to fix it; ideally fallback: “It sounds hard. Consider talking to a professional or a friend.”
+Example: If pattern = “low sleep quality”: “It sounds like you’ve been tired. Mission: Set an alarm to start winding down (screens off) at 9 PM for the next 3 nights.”
+These prompts should include a system message directing tone (encouraging, non-judgemental) and guard against giving risk advice. Referencing OpenAI’s safety guidelines, we avoid diagnosing or only say “if you feel overwhelmed, consider contacting support” as needed
+.
+
+Visual Implementation Options
+Approach	Pros	Cons	Effort	Demo Impact
+PNG state swaps	Very easy to implement. No coding needed beyond src swap. Fast fallback if behind schedule.	Static changes only – no smooth animation or motion. Visual sets have to be prepared ahead.	Very Low	Medium (good static effect)
+Lottie animations	High polish – can include subtle movements (blinking, particles). Lightweight (JSON) vs PNG.
+.	Requires After Effects asset creation or finding assets. Steeper learning. JSON config complexity.	Medium	High (polished, modern feel)
+CSS/Canvas effects	Uses web tech: e.g. CSS transitions (fade, color). No extra assets needed. Can animate background gradients or elements.	Limited to simpler effects. Harder to create rich scenes. Canvas requires code/math for animations.	Medium	Medium (depends on creativity)
+
+Recommendation: For an 8–12h hackathon, PNG swaps are safest: prepare ~4 background PNGs (e.g. “messy”, “gloomy”, “neutral”, “cozy”). Trigger class changes or setState to switch images. If the team has quick design resources, add one or two Lottie effects (e.g. a gentle sunlight Lottie or drifting clouds) for flair without much backend work.
+
+8–12 Hour Hackathon Plan
+0h-2h
+UI Layout &Onboarding screens
+2h-4h
+Implement check-inUI and test staticroom changes
+4h-6h
+Integrate AI calls(mood extraction +mission)
+6h-8h
+Room-state logic &visual assets (PNG orLottie)
+8h-10h
+Add streaks widgetand test mission flow
+10h-12h
+Polishing(animations, charts,QA, demo prep)
+8–12h Implementation Plan
+
+
+Show code
+Milestones:
+Setup (0–2h): Scaffold React app, create Onboarding and basic Room components with Tailwind.
+Check-In (2–4h): Add input form; mock backend or call AI stub; ensure pressing “Update” triggers a console result.
+AI Integration (4–6h): Hook actual GPT/Gemini API. Parse and display the extracted scores/mood.
+Mission & Visuals (6–8h): Implement mission generator (hardcode templates). Prepare room images. Switching images based on mock data.
+Streaks & Insights (8–10h): Display a simple streak count; add one chart if time. Use Recharts or a static bar.
+Polish & Demo (10–12h): Add transitions (fade-in/out), handle edge cases, write voiceover script. Ensure everything is bug-free.
+Fallback Cuts: If short on time, drop charts and the insights screen. If animations are too slow, use instant image swaps. Focus on one core use-case in the demo (e.g. stress-to-cozy transition).
+Sample Demo Walkthrough Script
+Intro/Goal: “This is MindGarden, an AI wellness coach. I’ll show how it personalises self-care through a living room metaphor.”
+Onboarding: Quickly click a goal (e.g. “Reduce stress”). The UI is calm and minimal.
+Check-In: Type: “I’ve been anxious and can’t sleep.” Hit Update. The app shows: Mood 25/100, Stress 85/100, Energy 30/100.
+Mission: It suggests: “Mission: Try a 10-minute relaxing walk this evening.” The room background darkens slightly (reflecting mood).
+Room Change: (Fast-forward 3 days for demo) Show that after completing tasks, the room brightens: lamp turns on, clutter tidies up. “The room gets cozier as habits improve.”
+Streak Display: A small badge pops up: “🔥 3-Day Streak”.
+Insight Screen: Click a tab: see a chart of mood over the week, and text “Stress often spikes at 10 PM – consider this breathing exercise.”
+Wrap: Summarise: “At each step the AI felt supportive, giving me real insight. Judges like you will immediately grasp the flow (typing to visual change) and feel the impact.”
+References
+Design inspiration and rationale draw on examples like Finch
+ (gamified journaling), Forest
+ (progressive visuals), and Calm
+ (ambient UI). Technical choices (FastAPI for backend
+, Lottie over PNG
+) follow best practices for rapid prototyping. AI guidelines reference Google’s Gemini samples
+ and OpenAI’s mental health safety efforts
+ to ensure supportive tone. The plan and effort estimates are informed by hackathon experiences and these sources.

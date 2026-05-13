@@ -1,0 +1,102 @@
+I want to build a React + Tailwind CSS voice AI web app called "MindfulVoice" for drug awareness and mental wellness support.
+
+Create a complete Replit project with the following:
+
+## Tech Stack
+- React 18
+- Tailwind CSS
+- Lucide React icons
+- No backend needed (use localStorage for data persistence)
+
+## Features Required
+
+### 1. Voice Interface with Animated Orb
+- A beautiful gradient orb (green to blue) that animates/pulses when recording
+- Microphone button to start/stop voice recording
+- Mock speech-to-text for demo (use random predefined phrases related to drug recovery)
+- Orb shows recording state with pulsing rings
+
+### 2. Chat/Conversation Interface
+- Display conversation history (user messages on right with gradient background, AI on left as white cards)
+- AI responses should be context-aware for drug recovery:
+  - If user mentions "craving" → suggest grounding techniques
+  - If user mentions "anxious" → offer breathing exercises
+  - If user mentions "alone" → provide reassurance
+  - If user mentions "trigger" → help identify patterns
+  - If user mentions "proud" → celebrate progress and update streak
+- Text input option as fallback
+- Auto-save conversations to localStorage
+
+### 3. Dashboard/Insights Page
+- Show current streak count (days of positive engagement)
+- Total conversations count
+- Wellness score (calculated based on sentiment of messages)
+- Common themes detected (cravings, anxiety, progress, etc.)
+- Achievements/badges section
+- AI-generated insight card with personalized recommendations
+
+### 4. Crisis/Help Page
+- Display emergency helpline numbers (mock numbers with call buttons)
+- Grounding exercises (5-4-3-1, box breathing, urge surfing)
+- Encouraging message
+- Resources section
+
+### 5. Bottom Navigation
+- 3 tabs: Home (conversation), Insights (dashboard), Help (crisis)
+- Apple-style bottom bar with icons
+- Active tab highlighting
+
+## Design Requirements
+- Apple-style minimalist design
+- Soft gradients (#f5f5f7 background)
+- Glassmorphism effects (backdrop-blur)
+- Rounded corners (24px cards, 40px buttons)
+- Smooth animations and transitions
+- Mobile-responsive
+- Use SF Pro font or system fonts
+
+## File Structure
+Create these files with complete working code:
+
+/src/App.jsx - Main app with navigation and state
+/src/index.css - Tailwind imports and custom animations
+/src/main.jsx - Entry point
+/src/components/VoiceOrb.jsx - Animated microphone orb
+/src/components/ConversationView.jsx - Chat interface
+/src/components/Dashboard.jsx - Stats and insights
+/src/components/CrisisMode.jsx - Help resources
+/src/hooks/useVoiceRecorder.js - Voice recording logic (mock)
+/lib/voiceAgent.js - Mock AI responses for drug recovery
+
+## Mock Voice Recognition
+Predefine these mock responses for demo:
+- "I'm feeling a strong craving right now"
+- "I had a tough day but I didn't give in"
+- "I feel so lonely and lost"
+- "I'm anxious about staying clean"
+- "I actually feel proud of myself today"
+- "I need someone to talk to"
+
+## Mock AI Logic
+The AI should respond appropriately:
+- Craving → Offer 10-20 minute urge surfing technique
+- Proud → Celebrate and update streak
+- Anxious → Box breathing exercise
+- Alone → Reassurance and grounding
+- Trigger → Pattern identification help
+
+## Data Persistence
+- Store conversations in localStorage
+- Store streak count in localStorage
+- Load data on app start
+
+## Package.json
+Include all necessary dependencies:
+- react, react-dom
+- lucide-react
+- tailwindcss
+- vite
+
+Make sure the app runs with `npm run dev` and looks beautiful on both desktop and mobile.
+
+The project must be fully functional for a hackathon demo with all interactive features working.
