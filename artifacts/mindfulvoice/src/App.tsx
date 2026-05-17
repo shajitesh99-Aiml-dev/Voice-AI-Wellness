@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import Home from "@/pages/home";
 import Insights from "@/pages/insights";
 import Help from "@/pages/help";
+import Dance from "@/pages/dance";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ function Router() {
       <div className="w-full max-w-[430px] relative pb-[80px] bg-background shadow-2xl overflow-x-hidden">
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/dance" component={Dance} />
           <Route path="/insights" component={Insights} />
           <Route path="/help" component={Help} />
           <Route component={NotFound} />
