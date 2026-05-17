@@ -1,11 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Send, Square, Globe, Loader2 } from "lucide-react";
-import { Orb } from "@/components/orb";
 import { useMindfulStore, Message } from "@/hooks/use-mindful-store";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import roomBg from "@assets/WhatsApp_Image_2026-05-13_at_10.22.39_AM_1778647975654.jpeg";
 
 const LANG_MAP: Record<string, string> = {
   hi: "hi-IN", ta: "ta-IN", te: "te-IN", kn: "kn-IN",
@@ -30,7 +26,7 @@ const FALLBACK_PHRASES = [
 
 function getFallbackResponse(text: string): string {
   const t = text.toLowerCase();
-  if (t.includes("craving")) return "Try urge surfing: observe the craving like a wave. It will peak and pass in 10-20 minutes. You don't have to act on it.";
+  if (t.includes("craving")) return "Try urge surfing: observe the craving like a wave. It will peak and pass in 10–20 minutes. You don't have to act on it.";
   if (t.includes("proud")) return "That is worth celebrating. You chose yourself today. Your streak grows stronger with every moment like this.";
   if (t.includes("anxious")) return "Let's breathe together. Inhale 4 counts, hold 4, exhale 4, hold 4. Repeat 4 times. You are safe right now.";
   if (t.includes("alone") || t.includes("lonely") || t.includes("lost")) return "You are not alone. Right now, in this moment, I'm here with you. You reached out — that took courage.";
@@ -83,38 +79,20 @@ export default function Home() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isRecording, isProcessing]);
+  }, [messages, isProcessing]);
 
   const handleSend = async (text: string, lang = detectedLang) => {
     if (!text.trim()) return;
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      text,
-      sender: "user",
-      timestamp: Date.now(),
-    };
+    const userMsg: Message = { id: Date.now().toString(), text, sender: "user", timestamp: Date.now() };
     addMessage(userMsg);
     setInputValue("");
     setIsProcessing(true);
-
     try {
       const response = await getGroqResponse(text, lang);
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: response,
-        sender: "ai",
-        timestamp: Date.now(),
-      };
-      addMessage(aiMsg);
+      addMessage({ id: (Date.now() + 1).toString(), text: response, sender: "ai", timestamp: Date.now() });
       speakText(response, lang);
     } catch {
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: getFallbackResponse(text),
-        sender: "ai",
-        timestamp: Date.now(),
-      };
-      addMessage(aiMsg);
+      addMessage({ id: (Date.now() + 1).toString(), text: getFallbackResponse(text), sender: "ai", timestamp: Date.now() });
     } finally {
       setIsProcessing(false);
     }
@@ -127,225 +105,196 @@ export default function Home() {
       const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setIsProcessing(true);
-        try {
-          const reader = new FileReader();
-          reader.onload = async () => {
-            try {
-              const base64 = (reader.result as string).split(",")[1];
-              const { text, language } = await transcribeAudio(base64, mimeType);
-              if (text?.trim()) {
-                setDetectedLang(language);
-                await handleSend(text, language);
-              }
-            } catch {
-              const phrase = FALLBACK_PHRASES[Math.floor(Math.random() * FALLBACK_PHRASES.length)];
-              await handleSend(phrase, "en");
-            } finally {
-              setIsProcessing(false);
-            }
-          };
-          reader.readAsDataURL(blob);
-        } catch {
-          setIsProcessing(false);
-        }
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const base64 = (reader.result as string).split(",")[1];
+            const { text, language } = await transcribeAudio(base64, mimeType);
+            if (text?.trim()) { setDetectedLang(language); await handleSend(text, language); }
+          } catch {
+            await handleSend(FALLBACK_PHRASES[Math.floor(Math.random() * FALLBACK_PHRASES.length)], "en");
+          } finally { setIsProcessing(false); }
+        };
+        reader.readAsDataURL(blob);
       };
-
       setIsRecording(true);
       incrementVoiceUse();
       recorder.start();
-
-      setTimeout(() => {
-        if (recorder.state === "recording") {
-          recorder.stop();
-          setIsRecording(false);
-        }
-      }, 12000);
+      setTimeout(() => { if (recorder.state === "recording") { recorder.stop(); setIsRecording(false); } }, 12000);
     } catch {
       setIsRecording(true);
       incrementVoiceUse();
       setTimeout(async () => {
         setIsRecording(false);
-        const phrase = FALLBACK_PHRASES[Math.floor(Math.random() * FALLBACK_PHRASES.length)];
-        await handleSend(phrase, "en");
+        await handleSend(FALLBACK_PHRASES[Math.floor(Math.random() * FALLBACK_PHRASES.length)], "en");
       }, 2000);
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.stop();
-    }
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
     setIsRecording(false);
   };
 
-  const toggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  };
-
   return (
-    <div className="flex flex-col h-full min-h-[100dvh] relative">
-      {/* Room background */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[40vh] pointer-events-none"
-        style={{
-          backgroundImage: `url(${roomBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: 0.1,
-          maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
-        }}
-      />
-
-      {/* Language badge */}
-      {detectedLang !== "en" && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-medium backdrop-blur-md"
-        >
-          <Globe className="w-3 h-3" />
-          {LANG_NAMES[detectedLang] ?? detectedLang}
-        </motion.div>
-      )}
-
-      {/* Orb + Mic */}
-      <div className="pt-12 pb-6 flex flex-col items-center justify-center relative z-10">
-        <Orb isRecording={isRecording || isProcessing} />
-        <Button
-          data-testid="button-mic-toggle"
-          size="icon"
-          variant="ghost"
-          disabled={isProcessing}
-          className="mt-6 rounded-full w-14 h-14 bg-background/50 backdrop-blur-md border border-white/10 shadow-lg transition-all"
-          onClick={toggleRecording}
-        >
-          {isProcessing ? (
-            <Loader2 className="w-5 h-5 text-primary animate-spin" />
-          ) : isRecording ? (
-            <Square className="w-5 h-5 text-red-400 fill-red-400" />
-          ) : (
-            <Mic className="w-6 h-6 text-foreground" />
-          )}
-        </Button>
-        {isRecording && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-xs text-red-400 mt-2"
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-5 py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-6"
+      >
+        <h1 className="text-white text-2xl font-semibold tracking-tight drop-shadow-lg">
+          How are you feeling today?
+        </h1>
+        {detectedLang !== "en" && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/25 text-white/80 text-xs"
           >
-            Listening... tap to stop
-          </motion.p>
+            <Globe className="w-3 h-3" />
+            {LANG_NAMES[detectedLang] ?? detectedLang}
+          </motion.div>
         )}
-        {isProcessing && !isRecording && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-xs text-primary/70 mt-2"
-          >
-            Thinking in your language...
-          </motion.p>
-        )}
-        {!isRecording && !isProcessing && (
-          <p className="text-[11px] text-muted-foreground mt-2 opacity-60">
-            Speak in any Indian language
-          </p>
-        )}
-      </div>
+      </motion.div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 pb-28 space-y-4" ref={scrollRef}>
-        {messages.length === 0 && !isRecording && !isProcessing && (
-          <div className="text-center text-muted-foreground mt-8 opacity-60">
-            <p>I am here to listen.</p>
-            <p className="text-sm mt-1">Speak in Hindi, Tamil, Telugu, or any Indian language.</p>
+      {/* Glass panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        className="w-full glass-strong rounded-3xl overflow-hidden"
+        style={{ boxShadow: "0 8px 48px rgba(0,0,0,0.25)" }}
+      >
+        {/* Chat history */}
+        {messages.length > 0 && (
+          <div
+            ref={scrollRef}
+            className="max-h-64 overflow-y-auto px-5 pt-5 pb-3 space-y-3"
+          >
+            <AnimatePresence>
+              {messages.map((msg) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  {msg.sender === "ai" && (
+                    <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mr-2 shrink-0 border border-white/30 text-white font-serif italic text-xs">
+                      M
+                    </div>
+                  )}
+                  <div
+                    className={`px-3 py-2 rounded-2xl max-w-[78%] text-sm leading-relaxed ${
+                      msg.sender === "user"
+                        ? "bg-white/25 text-white rounded-br-sm"
+                        : "bg-white/10 text-white/90 rounded-tl-sm border border-white/10"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </motion.div>
+              ))}
+              {isProcessing && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mr-2 border border-white/30 text-white font-serif italic text-xs shrink-0">M</div>
+                  <div className="px-3 py-2 rounded-2xl bg-white/10 border border-white/10 flex gap-1 items-center">
+                    {[0, 150, 300].map((d) => (
+                      <div key={d} className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
-        <AnimatePresence>
-          {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 16, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-            >
-              {msg.sender === "ai" && (
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-2 shrink-0 border border-primary/30 text-primary font-serif italic text-sm">
-                  M
-                </div>
-              )}
-              <div
-                className={`px-4 py-3 rounded-2xl max-w-[80%] text-sm leading-relaxed ${
-                  msg.sender === "user"
-                    ? "bg-gradient-to-br from-primary/80 to-primary/40 text-white rounded-br-sm backdrop-blur-md border border-primary/20"
-                    : "bg-card/60 backdrop-blur-xl border border-white/5 rounded-tl-sm text-foreground shadow-sm"
-                }`}
-              >
-                {msg.text}
-              </div>
-            </motion.div>
-          ))}
 
-          {(isRecording || isProcessing) && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex justify-end"
-            >
-              <div className="px-4 py-3 rounded-2xl bg-white/10 backdrop-blur-md rounded-br-sm border border-white/5 flex gap-1 items-center h-[46px]">
-                {[0, 150, 300].map((delay) => (
-                  <div
-                    key={delay}
-                    className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-bounce"
-                    style={{ animationDelay: `${delay}ms` }}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+        {messages.length === 0 && !isProcessing && (
+          <div className="px-5 pt-5 pb-2">
+            <p className="text-white/40 text-sm text-center">
+              {isRecording ? "Listening..." : "Speak or type in any Indian language"}
+            </p>
+          </div>
+        )}
 
-      {/* Text input */}
-      <div className="absolute bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/90 to-transparent">
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleSend(inputValue); }}
-          className="flex items-center gap-2 max-w-[430px] mx-auto"
-        >
-          <Input
-            data-testid="input-message"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type in any language..."
-            disabled={isProcessing}
-            className="bg-card/80 backdrop-blur-lg border-white/10 rounded-full px-5 h-12 focus-visible:ring-primary/50"
-          />
-          <Button
-            data-testid="button-send"
-            type="submit"
-            size="icon"
-            disabled={!inputValue.trim() || isProcessing}
-            className="rounded-full w-12 h-12 shrink-0 bg-primary/80 hover:bg-primary text-white shadow-lg"
+        {/* Divider if messages exist */}
+        {messages.length > 0 && <div className="h-px bg-white/10 mx-4" />}
+
+        {/* Input row */}
+        <div className="p-4">
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleSend(inputValue); }}
+            className="glass-input rounded-2xl flex items-center gap-2 px-4 py-3"
           >
-            <Send className="w-5 h-5" />
-          </Button>
-        </form>
-      </div>
+            <input
+              data-testid="input-message"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="I'm feeling a bit overwhelmed..."
+              disabled={isProcessing}
+              className="flex-1 bg-transparent text-white placeholder:text-white/45 text-sm outline-none min-w-0"
+            />
+            <button
+              data-testid="button-mic-toggle"
+              type="button"
+              disabled={isProcessing}
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                isRecording
+                  ? "bg-red-400/80 shadow-[0_0_12px_rgba(248,113,113,0.5)]"
+                  : "bg-white/20 hover:bg-white/30 border border-white/25"
+              }`}
+            >
+              {isProcessing ? (
+                <Loader2 className="w-4 h-4 text-white animate-spin" />
+              ) : isRecording ? (
+                <Square className="w-3.5 h-3.5 text-white fill-white" />
+              ) : (
+                <Mic className="w-4 h-4 text-white" />
+              )}
+            </button>
+          </form>
+
+          {/* Reflect button */}
+          <div className="flex justify-end mt-3">
+            <button
+              data-testid="button-send"
+              type="button"
+              disabled={!inputValue.trim() || isProcessing}
+              onClick={() => handleSend(inputValue)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl glass-input text-white/80 text-sm font-medium hover:bg-white/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Reflect
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Subtle hint */}
+      {isRecording && (
+        <motion.p
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-white/60 text-xs mt-4 drop-shadow"
+        >
+          Tap the mic again to stop
+        </motion.p>
+      )}
     </div>
   );
 }

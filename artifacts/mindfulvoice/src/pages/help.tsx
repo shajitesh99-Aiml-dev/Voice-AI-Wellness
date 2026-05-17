@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
-import { PhoneCall, HeartHandshake, Wind, Waves, Activity, ChevronRight } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { PhoneCall, HeartHandshake, Wind, Waves, Activity } from "lucide-react";
+import { motion } from "framer-motion";
+
+const fadeUp = (delay: number) => ({
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, delay },
+});
 
 export default function Help() {
   const [breathingState, setBreathingState] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
@@ -9,124 +14,116 @@ export default function Help() {
 
   useEffect(() => {
     if (!isBreathing) return;
-
-    let timeout: NodeJS.Timeout;
-    
-    if (breathingState === "inhale") {
-      timeout = setTimeout(() => setBreathingState("hold1"), 4000);
-    } else if (breathingState === "hold1") {
-      timeout = setTimeout(() => setBreathingState("exhale"), 4000);
-    } else if (breathingState === "exhale") {
-      timeout = setTimeout(() => setBreathingState("hold2"), 4000);
-    } else if (breathingState === "hold2") {
-      timeout = setTimeout(() => setBreathingState("inhale"), 4000);
-    }
-
-    return () => clearTimeout(timeout);
+    const durations: Record<string, number> = { inhale: 4000, hold1: 4000, exhale: 4000, hold2: 4000 };
+    const next: Record<string, "inhale" | "hold1" | "exhale" | "hold2"> = {
+      inhale: "hold1", hold1: "exhale", exhale: "hold2", hold2: "inhale",
+    };
+    const t = setTimeout(() => setBreathingState(next[breathingState]), durations[breathingState]);
+    return () => clearTimeout(t);
   }, [breathingState, isBreathing]);
 
+  const breathLabel = { inhale: "Inhale", hold1: "Hold", exhale: "Exhale", hold2: "Hold" };
+  const breathScale = { inhale: 1.5, hold1: 1.5, exhale: 1, hold2: 1 };
+
   return (
-    <div className="flex flex-col h-full px-5 pt-12 pb-28 space-y-8 overflow-y-auto">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground mb-2">Crisis & Grounding</h1>
-        <p className="text-muted-foreground text-sm">You don't have to carry this alone. Resources to help anchor you in the present.</p>
-      </div>
+    <div className="min-h-[100dvh] px-5 pt-12 pb-28 space-y-6 overflow-y-auto">
+      <motion.div {...fadeUp(0)}>
+        <h1 className="text-2xl font-semibold text-white drop-shadow-md mb-1">Crisis & Grounding</h1>
+        <p className="text-white/60 text-sm">You don't have to carry this alone.</p>
+      </motion.div>
 
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-destructive mb-3 flex items-center gap-2">
-          <Activity className="w-4 h-4" /> Emergency Helplines
-        </h2>
-        <div className="space-y-3">
-          <a href="tel:988" className="block">
-            <Card className="bg-destructive/10 border-destructive/20 p-4 flex items-center justify-between hover:bg-destructive/20 transition-colors">
-              <div>
-                <h3 className="font-semibold text-destructive-foreground">National Suicide Prevention</h3>
-                <p className="text-xs text-destructive-foreground/80 mt-1">Dial 988</p>
+      {/* Emergency helplines */}
+      <motion.section {...fadeUp(0.05)}>
+        <p className="text-xs text-red-300 uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5" /> Emergency Helplines
+        </p>
+        <div className="space-y-2.5">
+          {[
+            { title: "National Suicide Prevention", sub: "Dial 988", href: "tel:988", icon: PhoneCall, accent: true },
+            { title: "Crisis Text Line", sub: "Text HOME to 741741", href: "sms:741741", icon: HeartHandshake, accent: false },
+            { title: "SAMHSA Helpline", sub: "1-800-662-4357", href: "tel:1-800-662-4357", icon: PhoneCall, accent: false },
+          ].map(({ title, sub, href, icon: Icon, accent }) => (
+            <a key={title} href={href}>
+              <div className={`flex items-center justify-between p-4 rounded-2xl glass hover:bg-white/20 transition-all ${
+                accent ? "border border-red-400/30 bg-red-400/5" : "border border-white/15"
+              }`}>
+                <div>
+                  <p className={`font-semibold text-sm ${accent ? "text-red-200" : "text-white"}`}>{title}</p>
+                  <p className="text-xs text-white/50 mt-0.5">{sub}</p>
+                </div>
+                <Icon className={`w-5 h-5 ${accent ? "text-red-300" : "text-teal-300"}`} />
               </div>
-              <PhoneCall className="w-5 h-5 text-destructive" />
-            </Card>
-          </a>
-          <a href="sms:741741" className="block">
-            <Card className="bg-card/60 backdrop-blur border-white/5 p-4 flex items-center justify-between hover:bg-card/80 transition-colors">
-              <div>
-                <h3 className="font-semibold text-foreground">Crisis Text Line</h3>
-                <p className="text-xs text-muted-foreground mt-1">Text HOME to 741741</p>
-              </div>
-              <HeartHandshake className="w-5 h-5 text-primary" />
-            </Card>
-          </a>
-          <a href="tel:1-800-662-4357" className="block">
-            <Card className="bg-card/60 backdrop-blur border-white/5 p-4 flex items-center justify-between hover:bg-card/80 transition-colors">
-              <div>
-                <h3 className="font-semibold text-foreground">SAMHSA Helpline</h3>
-                <p className="text-xs text-muted-foreground mt-1">1-800-662-4357</p>
-              </div>
-              <PhoneCall className="w-5 h-5 text-primary" />
-            </Card>
-          </a>
+            </a>
+          ))}
         </div>
-      </section>
+      </motion.section>
 
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-          <Wind className="w-4 h-4" /> Grounding Exercises
-        </h2>
-        
-        <Card className="bg-card/40 backdrop-blur border-white/5 overflow-hidden mb-4">
-          <div className="p-5 border-b border-white/5">
-            <h3 className="font-medium text-foreground mb-1">Box Breathing</h3>
-            <p className="text-sm text-muted-foreground mb-4">Calm your nervous system with measured breaths.</p>
-            
-            <div className="flex flex-col items-center py-6">
-              <div className="relative w-32 h-32 flex items-center justify-center mb-6">
-                <div 
-                  className={`absolute inset-0 rounded-2xl border-2 transition-all duration-[4000ms] ease-linear ${
-                    !isBreathing ? 'border-primary/20 scale-100' :
-                    breathingState === 'inhale' ? 'border-primary bg-primary/10 scale-150' :
-                    breathingState === 'hold1' ? 'border-primary bg-primary/20 scale-150' :
-                    breathingState === 'exhale' ? 'border-primary/50 bg-primary/5 scale-100' :
-                    'border-primary/30 bg-transparent scale-100'
-                  }`}
-                />
-                <span className="relative z-10 text-sm font-medium tracking-widest text-primary uppercase">
-                  {!isBreathing ? "Ready" : breathingState}
-                </span>
-              </div>
-              
-              <Button 
-                variant={isBreathing ? "outline" : "default"} 
-                className={isBreathing ? "border-white/10" : "bg-primary text-white"}
-                onClick={() => {
-                  setIsBreathing(!isBreathing);
-                  if (!isBreathing) setBreathingState("inhale");
+      {/* Box breathing */}
+      <motion.section {...fadeUp(0.1)}>
+        <p className="text-xs text-white/60 uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+          <Wind className="w-3.5 h-3.5" /> Grounding Exercises
+        </p>
+
+        <div className="glass-strong rounded-2xl p-5 mb-3">
+          <h3 className="font-medium text-white mb-1">Box Breathing</h3>
+          <p className="text-sm text-white/60 mb-5">Calm your nervous system with measured breaths.</p>
+
+          <div className="flex flex-col items-center py-4">
+            <div className="relative w-28 h-28 flex items-center justify-center mb-6">
+              <motion.div
+                className="absolute inset-0 rounded-2xl border-2 border-teal-400/40 bg-teal-400/5"
+                animate={{
+                  scale: isBreathing ? breathScale[breathingState] : 1,
+                  borderColor: isBreathing ? "rgba(52,211,153,0.7)" : "rgba(52,211,153,0.2)",
+                  backgroundColor: isBreathing && (breathingState === "hold1" || breathingState === "inhale")
+                    ? "rgba(52,211,153,0.12)"
+                    : "rgba(52,211,153,0.03)",
                 }}
-              >
-                {isBreathing ? "Stop" : "Start Exercise"}
-              </Button>
+                transition={{ duration: 4, ease: "linear" }}
+              />
+              <span className="relative z-10 text-sm font-semibold text-white/90 tracking-widest uppercase">
+                {isBreathing ? breathLabel[breathingState] : "Ready"}
+              </span>
             </div>
-          </div>
-        </Card>
 
-        <Card className="bg-card/40 backdrop-blur border-white/5 p-5 mb-4">
-          <h3 className="font-medium text-foreground mb-1">5-4-3-2-1 Technique</h3>
-          <p className="text-sm text-muted-foreground mb-4">A sensory exercise to pull you back to reality.</p>
-          <ul className="space-y-2 text-sm text-foreground/80">
-            <li className="flex gap-3"><span className="font-bold text-primary">5</span> things you can see</li>
-            <li className="flex gap-3"><span className="font-bold text-primary">4</span> things you can physically feel</li>
-            <li className="flex gap-3"><span className="font-bold text-primary">3</span> things you can hear</li>
-            <li className="flex gap-3"><span className="font-bold text-primary">2</span> things you can smell</li>
-            <li className="flex gap-3"><span className="font-bold text-primary">1</span> thing you can taste</li>
+            <button
+              onClick={() => { setIsBreathing(!isBreathing); if (!isBreathing) setBreathingState("inhale"); }}
+              className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                isBreathing
+                  ? "glass text-white/80 hover:bg-white/20"
+                  : "bg-teal-500/80 text-white hover:bg-teal-500 shadow-[0_0_20px_rgba(20,184,166,0.3)]"
+              }`}
+            >
+              {isBreathing ? "Stop" : "Start Exercise"}
+            </button>
+          </div>
+        </div>
+
+        {/* 5-4-3-2-1 */}
+        <div className="glass-strong rounded-2xl p-5 mb-3">
+          <h3 className="font-medium text-white mb-1">5-4-3-2-1 Technique</h3>
+          <p className="text-sm text-white/60 mb-4">A sensory exercise to pull you back to reality.</p>
+          <ul className="space-y-2.5">
+            {[["5", "things you can see"], ["4", "things you can physically feel"], ["3", "things you can hear"], ["2", "things you can smell"], ["1", "thing you can taste"]].map(([n, label]) => (
+              <li key={n} className="flex gap-3 items-start">
+                <span className="font-bold text-teal-300 text-base w-4 shrink-0">{n}</span>
+                <span className="text-white/75 text-sm leading-snug">{label}</span>
+              </li>
+            ))}
           </ul>
-        </Card>
+        </div>
 
-        <Card className="bg-card/40 backdrop-blur border-white/5 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <Waves className="w-5 h-5 text-primary" />
-            <h3 className="font-medium text-foreground">Urge Surfing</h3>
+        {/* Urge surfing */}
+        <div className="glass-strong rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Waves className="w-5 h-5 text-teal-300" />
+            <h3 className="font-medium text-white">Urge Surfing</h3>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">Cravings are like ocean waves. They build, peak, and eventually crash. You don't have to fight the wave; you just have to ride it out. Notice the physical sensations in your body. Give it 15 minutes.</p>
-        </Card>
-      </section>
+          <p className="text-sm text-white/70 leading-relaxed">
+            Cravings are like ocean waves. They build, peak, and eventually crash. You don't have to fight the wave — you just have to ride it out. Notice the physical sensations in your body. Give it 15 minutes.
+          </p>
+        </div>
+      </motion.section>
     </div>
   );
 }
