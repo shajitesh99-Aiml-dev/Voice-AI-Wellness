@@ -552,12 +552,15 @@ export default function Dance() {
               exit={{ opacity: 0, y: -8 }}
               className="text-center mt-1 relative z-10"
             >
-              <div className="flex items-center justify-center gap-1.5">
-                <MoveIcon className="w-3.5 h-3.5" style={{ color: currentMove.color }} />
-                <span className="text-xs font-semibold" style={{ color: currentMove.color }}>
-                  {currentMove.name}
-                </span>
-              </div>
+             <div
+  className="flex items-center justify-center gap-1.5"
+  style={{ color: currentMove.color }}
+>
+  <MoveIcon className="w-3.5 h-3.5" />
+  <span className="text-xs font-semibold" style={{ color: currentMove.color }}>
+    {currentMove.name}
+  </span>
+</div>
               <p className="text-[10px] text-white/50 mt-0.5 px-3">{currentMove.instruction}</p>
             </motion.div>
           </AnimatePresence>
